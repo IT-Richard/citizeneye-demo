@@ -16,8 +16,3080 @@
     <div id="root"></div>
     
     <script type="text/babel">
-        // Paste the entire React component code from the artifact here
-        // (Copy everything from the artifact including all the imports and component code)
+
+import React, { useState } from 'react';
+import { 
+  AlertCircle, MapPin, Shield, Users, Bell, MessageSquare, 
+  FileText, Home, LogOut, Menu, X, Plus, Search,
+  Filter, TrendingUp, Activity, Clock, CheckCircle, AlertTriangle,
+  Upload, Navigation, ThumbsUp, Send, Eye, Edit, Trash2,
+  BarChart3, PieChart, Map, User
+} from 'lucide-react';
+
+const mockUsers = {
+  'robertjones@sypherion.com': {
+    id: '1',
+    email: 'robertjones@sypherion.com',
+    fullName: 'Robert Jones',
+    phone: '+1234567890',
+    role: 'citizen',
+    isVerified: true,
+    anonymousReporting: false,
+    createdAt: new Date().toISOString(),
+    emergencyContacts: [
+      { name: 'Sarah Jones', phone: '+1234567891', relationship: 'Spouse' }
+    ]
+  },
+  'itrichard@sypherion.com': {
+    id: '2',
+    email: 'itrichard@sypherion.com',
+    fullName: 'Richard IT Admin',
+    phone: '+1234567892',
+    role: 'admin',
+    isVerified: true,
+    anonymousReporting: false,
+    createdAt: new Date().toISOString(),
+    emergencyContacts: []
+  },
+  'richmond.williams@lnp.gov.lr': {
+    id: '3',
+    email: 'richmond.williams@lnp.gov.lr',
+    fullName: 'Richmond Williams',
+    phone: '+231777123456',
+    role: 'responder',
+    isVerified: true,
+    anonymousReporting: false,
+    createdAt: new Date().toISOString(),
+    emergencyContacts: []
+  }
+};
+
+const mockAlerts = [
+  {
+    id: '1',
+    title: 'Severe Weather Alert',
+    message: 'Heavy rain expected tonight. Stay indoors.',
+    severity: 'warning',
+    createdAt: '2025-10-01T08:00:00Z',
+    createdBy: 'admin'
+  }
+];
+
+const mockSafetyTips = [
+  {
+    id: '1',
+    title: 'Lock Your Doors',
+    content: 'Always lock doors and windows when leaving home, even for short trips.',
+    category: 'Home Security',
+    userId: '2',
+    userName: 'Safety Expert',
+    upvotes: 24,
+    createdAt: '2025-09-28T12:00:00Z'
+  }
+];
+
+const mockChatRooms = [
+  { id: '1', name: 'Downtown Neighborhood', description: 'Chat for downtown residents', memberCount: 45 },
+  { id: '2', name: 'North District', description: 'North district community chat', memberCount: 32 }
+];
+
+export default function CitizenEye() {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [view, setView] = useState('login');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  
+  const [reports, setReports] = useState([]);
+  const [alerts, setAlerts] = useState(mockAlerts);
+  const [safetyTips, setSafetyTips] = useState(mockSafetyTips);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [selectedChatRoom, setSelectedChatRoom] = useState('');
+
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [signupForm, setSignupForm] = useState({ 
+    fullName: '', 
+    email: '', 
+    password: '', 
+    confirmPassword: '',
+    phone: '',
+    county: '',
+    city: '',
+    address: '',
+    nationalIdNumber: '',
+    nationalIdDocument: null,
+    proofOfResidence: null
+  });
+  const [reportForm, setReportForm] = useState({
+    type: '',
+    description: '',
+    location: '',
+    useCurrentLocation: false
+  });
+  const [assignForm, setAssignForm] = useState({
+    reportId: '',
+    assignedTo: '',
+    notes: ''
+  });
+  const [users, setUsers] = useState(Object.values(mockUsers));
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userForm, setUserForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    role: 'citizen'
+  });
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [responderForm, setResponderForm] = useState({ status: '', notes: '' });
+  const [notifications, setNotifications] = useState([
+    {
+      id: '1',
+      title: 'Welcome to CitizenEye',
+      message: 'Thank you for joining our community safety platform.',
+      type: 'info',
+      createdAt: new Date().toISOString(),
+      isRead: false
+    }
+  ]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(1);
+  const [showAddTip, setShowAddTip] = useState(false);
+  const [newTip, setNewTip] = useState({ title: '', content: '', category: '' });
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const showSuccess = (message) => {
+    setSuccessMessage(message);
+    setTimeout(() => setSuccessMessage(''), 4000);
+  };
+
+  const handleLogin = () => {
+    const user = mockUsers[loginForm.email.toLowerCase()];
+    if (user) {
+      setCurrentUser(user);
+      setIsAuthenticated(true);
+      showSuccess('Welcome back, ' + user.fullName + '! Successfully logged in.');
+      if (user.role === 'admin') {
+        setView('admin');
+      } else if (user.role === 'responder') {
+        setView('responder-cases');
+      } else {
+        setView('dashboard');
+      }
+    } else {
+      alert('Invalid credentials. Try:\nrobertjones@sypherion.com (Citizen)\nitrichard@sypherion.com (Admin)\nrichmond.williams@lnp.gov.lr (Responder)');
+    }
+  };
+
+  const handleSignup = () => {
+    // Validation
+    if (!signupForm.fullName || !signupForm.email || !signupForm.password || 
+        !signupForm.confirmPassword || !signupForm.phone || !signupForm.county || 
+        !signupForm.city || !signupForm.nationalIdNumber) {
+      alert('Please fill in all required fields');
+      return;
+    }
+
+    if (signupForm.password !== signupForm.confirmPassword) {
+      alert('Passwords do not match');
+      return;
+    }
+
+    if (signupForm.password.length < 8) {
+      alert('Password must be at least 8 characters long');
+      return;
+    }
+
+    if (!signupForm.nationalIdDocument) {
+      alert('Please upload your National ID document');
+      return;
+    }
+
+    if (!signupForm.proofOfResidence) {
+      alert('Please upload proof of residence in Liberia');
+      return;
+    }
+
+    // Validate phone number format for Liberia (+231)
+    const phoneRegex = /^(\+231|231)?[0-9]{9,10}$/;
+    if (!phoneRegex.test(signupForm.phone.replace(/\s/g, ''))) {
+      alert('Please enter a valid Liberian phone number (e.g., +231 77 123 4567)');
+      return;
+    }
+
+    const newUser = {
+      ...mockUsers['robertjones@sypherion.com'],
+      email: signupForm.email,
+      fullName: signupForm.fullName,
+      phone: signupForm.phone,
+      county: signupForm.county,
+      city: signupForm.city,
+      address: signupForm.address,
+      nationalIdNumber: signupForm.nationalIdNumber,
+      id: Date.now().toString(),
+      isVerified: false, // Requires admin verification
+      registrationStatus: 'pending_verification'
+    };
+    setCurrentUser(newUser);
+    setIsAuthenticated(true);
+    showSuccess('Registration submitted! Your account is pending admin verification. You will be notified once approved.');
+    setView('dashboard');
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+    setView('login');
+  };
+
+  const handlePanicButton = () => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latitude = position.coords.latitude;
+          const longitude = position.coords.longitude;
+          
+          const emergencyReport = {
+            id: Date.now().toString(),
+            userId: currentUser?.id || '',
+            type: 'Emergency',
+            description: '🚨 EMERGENCY PANIC BUTTON ACTIVATED - Immediate assistance required!',
+            location: 'Lat: ' + latitude.toFixed(6) + ', Long: ' + longitude.toFixed(6),
+            latitude: latitude,
+            longitude: longitude,
+            status: 'pending',
+            isAnonymous: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            assignedTo: null,
+            assignedToName: null,
+            responderStatus: null,
+            responderNotes: null,
+            adminReviewed: false,
+            isPanic: true
+          };
+          
+          setReports([emergencyReport, ...reports]);
+          
+          const contacts = currentUser?.emergencyContacts || [];
+          const contactList = contacts.map(c => c.name + ' (' + c.phone + ')').join(', ');
+          
+          alert('🚨 PANIC BUTTON ACTIVATED!\n\nEmergency report created!\n\nYour Location:\nLatitude: ' + latitude.toFixed(6) + '\nLongitude: ' + longitude.toFixed(6) + '\n\nEmergency contacts notified:\n' + (contactList || 'No contacts configured'));
+        },
+        (error) => {
+          const emergencyReport = {
+            id: Date.now().toString(),
+            userId: currentUser?.id || '',
+            type: 'Emergency',
+            description: '🚨 EMERGENCY PANIC BUTTON ACTIVATED - Immediate assistance required! (Location unavailable)',
+            location: 'Location not available',
+            status: 'pending',
+            isAnonymous: false,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            assignedTo: null,
+            assignedToName: null,
+            responderStatus: null,
+            responderNotes: null,
+            adminReviewed: false,
+            isPanic: true
+          };
+          
+          setReports([emergencyReport, ...reports]);
+          alert('🚨 PANIC BUTTON ACTIVATED!\n\nEmergency report created!\nLocation: Unable to access');
+        }
+      );
+    } else {
+      alert('Geolocation is not supported by your browser.');
+    }
+  };
+
+  const handleSubmitReport = () => {
+    const newReport = {
+      id: Date.now().toString(),
+      userId: currentUser?.id || '',
+      type: reportForm.type,
+      description: reportForm.description,
+      location: reportForm.location,
+      status: 'pending',
+      isAnonymous: currentUser?.anonymousReporting || false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      assignedTo: null,
+      assignedToName: null,
+      responderStatus: null,
+      responderNotes: null,
+      adminReviewed: false
+    };
+    setReports([newReport, ...reports]);
+    setReportForm({ type: '', description: '', location: '', useCurrentLocation: false });
+    
+    handleCreateNotification(
+      'New Report Submitted',
+      'Your ' + reportForm.type + ' report has been submitted successfully. Report ID: #' + newReport.id.slice(-6),
+      'success'
+    );
+    
+    showSuccess('Report submitted successfully! Report ID: #' + newReport.id.slice(-6));
+    setView('reports');
+  };
+
+  const handleAddUser = () => {
+    if (!userForm.fullName || !userForm.email || !userForm.phone) {
+      alert('Please fill in all fields');
+      return;
+    }
+    
+    const emailExists = users.some(u => u.email.toLowerCase() === userForm.email.toLowerCase());
+    if (emailExists) {
+      alert('Email already exists!');
+      return;
+    }
+
+    const newUser = {
+      id: Date.now().toString(),
+      ...userForm,
+      isVerified: true,
+      anonymousReporting: false,
+      createdAt: new Date().toISOString(),
+      emergencyContacts: []
+    };
+    
+    setUsers([...users, newUser]);
+    setUserForm({ fullName: '', email: '', phone: '', role: 'citizen' });
+    setShowUserModal(false);
+    showSuccess('User ' + newUser.fullName + ' added successfully!');
+  };
+
+  const handleEditUser = () => {
+    if (!userForm.fullName || !userForm.email || !userForm.phone) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    const updatedUsers = users.map(u => {
+      if (u.id === selectedUser?.id) {
+        return { ...u, ...userForm };
+      }
+      return u;
+    });
+    
+    setUsers(updatedUsers);
+    setSelectedUser(null);
+    setUserForm({ fullName: '', email: '', phone: '', role: 'citizen' });
+    setShowUserModal(false);
+    showSuccess('User updated successfully!');
+  };
+
+  const handleDeleteUser = (userId) => {
+    const user = users.find(u => u.id === userId);
+    if (confirm('Are you sure you want to delete ' + (user?.fullName || 'this user') + '? This action cannot be undone.')) {
+      setUsers(users.filter(u => u.id !== userId));
+      showSuccess('User deleted successfully!');
+    }
+  };
+
+  const handleToggleUserStatus = (userId) => {
+    const updatedUsers = users.map(u => {
+      if (u.id === userId) {
+        return { ...u, isVerified: !u.isVerified };
+      }
+      return u;
+    });
+    setUsers(updatedUsers);
+    const user = updatedUsers.find(u => u.id === userId);
+    showSuccess('User ' + (user?.isVerified ? 'activated' : 'deactivated') + ' successfully!');
+  };
+
+  const handleCreateNotification = (title, message, type = 'info', targetRoles = ['citizen', 'responder', 'admin']) => {
+    const newNotification = {
+      id: Date.now().toString(),
+      title: title,
+      message: message,
+      type: type,
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      targetRoles: targetRoles
+    };
+    setNotifications([newNotification, ...notifications]);
+    setUnreadCount(unreadCount + 1);
+  };
+
+  const handleMarkAsRead = (notificationId) => {
+    const updatedNotifications = notifications.map(n => {
+      if (n.id === notificationId && !n.isRead) {
+        setUnreadCount(Math.max(0, unreadCount - 1));
+        return { ...n, isRead: true };
+      }
+      return n;
+    });
+    setNotifications(updatedNotifications);
+  };
+
+  const handleMarkAllAsRead = () => {
+    const updatedNotifications = notifications.map(n => ({ ...n, isRead: true }));
+    setNotifications(updatedNotifications);
+    setUnreadCount(0);
+  };
+
+  const handleDeleteNotification = (notificationId) => {
+    const notification = notifications.find(n => n.id === notificationId);
+    if (!notification?.isRead) {
+      setUnreadCount(Math.max(0, unreadCount - 1));
+    }
+    setNotifications(notifications.filter(n => n.id !== notificationId));
+  };
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isResponder = currentUser?.role === 'responder';
+
+  const handleAssignReport = () => {
+    if (!assignForm.assignedTo) {
+      alert('Please select a responder');
+      return;
+    }
+    
+    const responder = users.find(u => u.id === assignForm.assignedTo);
+    const updatedReports = reports.map(report => {
+      if (report.id === selectedReport?.id) {
+        return {
+          ...report,
+          assignedTo: assignForm.assignedTo,
+          assignedToName: responder?.fullName || '',
+          status: 'under_review',
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return report;
+    });
+    
+    setReports(updatedReports);
+    const updatedReport = updatedReports.find(r => r.id === selectedReport?.id);
+    setSelectedReport(updatedReport || null);
+    setAssignForm({ reportId: '', assignedTo: '', notes: '' });
+    
+    handleCreateNotification(
+      'New Case Assigned',
+      'You have been assigned to case #' + (selectedReport?.id.slice(-6) || '') + ' (' + (selectedReport?.type || '') + ')',
+      'info',
+      ['responder']
+    );
+    
+    showSuccess('Case assigned successfully! ' + (responder?.fullName || '') + ' has been notified.');
+  };
+
+  const handleResponderUpdate = () => {
+    if (!responderForm.status) {
+      alert('Please select a status');
+      return;
+    }
+
+    const updatedReports = reports.map(report => {
+      if (report.id === selectedReport?.id) {
+        return {
+          ...report,
+          responderStatus: responderForm.status,
+          responderNotes: responderForm.notes,
+          status: responderForm.status === 'resolved' ? 'resolved' : 'under_review',
+          adminReviewed: false,
+          updatedAt: new Date().toISOString()
+        };
+      }
+      return report;
+    });
+    
+    setReports(updatedReports);
+    setSelectedReport(updatedReports.find(r => r.id === selectedReport?.id) || null);
+    setResponderForm({ status: '', notes: '' });
+    
+    handleCreateNotification(
+      'Case Status Updated',
+      'Your report #' + (selectedReport?.id.slice(-6) || '') + ' status has been updated to: ' + responderForm.status,
+      'info',
+      ['citizen']
+    );
+    
+    handleCreateNotification(
+      'Responder Update Available',
+      'Case #' + (selectedReport?.id.slice(-6) || '') + ' has been updated by responder. Please review.',
+      'warning',
+      ['admin']
+    );
+    
+    showSuccess('Status updated successfully! Case marked as "' + responderForm.status + '".');
+  };
+
+  const handleAdminReview = (reportId) => {
+    const updatedReports = reports.map(report => {
+      if (report.id === reportId) {
+        return {
+          ...report,
+          adminReviewed: true
+        };
+      }
+      return report;
+    });
+    setReports(updatedReports);
+    
+    handleCreateNotification(
+      'Case Status Confirmed',
+      'The status of your report #' + reportId.slice(-6) + ' has been confirmed by admin.',
+      'success',
+      ['citizen']
+    );
+    
+    showSuccess('Case status confirmed! Responder and reporter have been notified.');
+  };
+
+  const SuccessNotification = () => {
+    if (!successMessage) return null;
+    return (
+      <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center gap-3">
+        <CheckCircle size={24} />
+        <span>{successMessage}</span>
+      </div>
+    );
+  };
+
+  const NotificationPanel = () => {
+    if (!showNotifications) return null;
+
+    const userNotifications = notifications.filter(n => 
+      !n.targetRoles || n.targetRoles.includes(currentUser?.role || 'citizen')
+    );
+
+    return (
+      <div className="fixed right-4 top-20 w-96 bg-white rounded-xl shadow-2xl z-50 max-h-96 overflow-hidden flex flex-col">
+        <div className="p-4 border-b flex items-center justify-between bg-gray-50">
+          <div className="flex items-center gap-2">
+            <Bell className="text-teal-500" size={20} />
+            <h3 className="font-bold">Notifications</h3>
+            {unreadCount > 0 && (
+              <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full font-bold">
+                {unreadCount}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="text-xs text-teal-500 hover:text-teal-600 font-semibold"
+              >
+                Mark all read
+              </button>
+            )}
+            <button
+              onClick={() => setShowNotifications(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto">
+          {userNotifications.length === 0 ? (
+            <div className="p-8 text-center">
+              <Bell className="mx-auto mb-3 text-gray-300" size={48} />
+              <p className="text-gray-500">No notifications yet</p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {userNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className={'p-4 hover:bg-gray-50 cursor-pointer transition ' + (!notification.isRead ? 'bg-blue-50' : '')}
+                  onClick={() => handleMarkAsRead(notification.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={'w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ' + 
+                      (notification.type === 'success' ? 'bg-green-100' : 
+                       notification.type === 'warning' ? 'bg-orange-100' : 
+                       notification.type === 'error' ? 'bg-red-100' : 'bg-blue-100')}>
+                      {notification.type === 'success' && <CheckCircle className="text-green-600" size={20} />}
+                      {notification.type === 'warning' && <AlertTriangle className="text-orange-600" size={20} />}
+                      {notification.type === 'error' && <AlertCircle className="text-red-600" size={20} />}
+                      {notification.type === 'info' && <Bell className="text-blue-600" size={20} />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <h4 className="font-semibold text-sm">{notification.title}</h4>
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <span className="text-xs text-gray-500">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteNotification(notification.id);
+                          }}
+                          className="text-xs text-red-500 hover:text-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  if (view === 'login') {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
+          <div className="flex items-center gap-3 justify-center mb-6">
+            <Eye className="w-10 h-10 text-teal-500" />
+            <h1 className="text-3xl font-bold" style={{ color: '#2C3E50' }}>CitizenEye</h1>
+          </div>
+          <p className="text-gray-600 text-center mb-8">Community Safety Platform</p>
+          
+          <div className="space-y-4">
+            <input
+              type="email"
+              placeholder="Email"
+              value={loginForm.email}
+              onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={loginForm.password}
+              onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+            />
+            <button
+              onClick={handleLogin}
+              className="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setView('signup')}
+              className="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+            >
+              Sign Up
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'signup') {
+    const liberianCounties = [
+      'Bomi', 'Bong', 'Gbarpolu', 'Grand Bassa', 'Grand Cape Mount', 
+      'Grand Gedeh', 'Grand Kru', 'Lofa', 'Margibi', 'Maryland', 
+      'Montserrado', 'Nimba', 'River Cess', 'River Gee', 'Sinoe'
+    ];
+
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4" style={{ fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center gap-3 justify-center mb-4">
+            <Eye className="w-10 h-10 text-teal-500" />
+            <h1 className="text-3xl font-bold" style={{ color: '#2C3E50' }}>Create Account</h1>
+          </div>
+          
+          <div className="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg mb-6">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="text-blue-600 flex-shrink-0 mt-0.5" size={20} />
+              <div>
+                <h3 className="font-bold text-blue-900 mb-1">Liberian Citizens Only</h3>
+                <p className="text-sm text-blue-800">
+                  Registration is restricted to Liberian citizens and residents. You must provide valid 
+                  national identification documents for verification.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-5">
+            {/* Personal Information */}
+            <div>
+              <h3 className="font-bold text-lg mb-3 text-gray-700 border-b pb-2">Personal Information</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">Full Name *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter your full legal name"
+                    value={signupForm.fullName}
+                    onChange={(e) => setSignupForm({ ...signupForm, fullName: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">Email Address *</label>
+                  <input
+                    type="email"
+                    placeholder="your.email@example.com"
+                    value={signupForm.email}
+                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">Phone Number *</label>
+                  <input
+                    type="tel"
+                    placeholder="+231 77 123 4567"
+                    value={signupForm.phone}
+                    onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Liberian phone numbers only (+231)</p>
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">National ID Number *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter your National ID number"
+                    value={signupForm.nationalIdNumber}
+                    onChange={(e) => setSignupForm({ ...signupForm, nationalIdNumber: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Address Information */}
+            <div>
+              <h3 className="font-bold text-lg mb-3 text-gray-700 border-b pb-2">Address in Liberia</h3>
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">County *</label>
+                  <select
+                    value={signupForm.county}
+                    onChange={(e) => setSignupForm({ ...signupForm, county: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Select your county</option>
+                    {liberianCounties.map(county => (
+                      <option key={county} value={county}>{county}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">City/Town *</label>
+                  <input
+                    type="text"
+                    placeholder="Enter your city or town"
+                    value={signupForm.city}
+                    onChange={(e) => setSignupForm({ ...signupForm, city: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block font-semibold mb-2 text-sm">Street Address</label>
+                <input
+                  type="text"
+                  placeholder="House number, street name (optional)"
+                  value={signupForm.address}
+                  onChange={(e) => setSignupForm({ ...signupForm, address: e.target.value })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+            </div>
+
+            {/* Document Uploads */}
+            <div>
+              <h3 className="font-bold text-lg mb-3 text-gray-700 border-b pb-2">Verification Documents</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">National ID Card / Passport *</label>
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-teal-500 cursor-pointer transition bg-gray-50">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setSignupForm({ ...signupForm, nationalIdDocument: e.target.files[0] })}
+                      className="hidden"
+                      id="nationalId"
+                    />
+                    <label htmlFor="nationalId" className="cursor-pointer">
+                      <Upload className="mx-auto mb-2 text-gray-400" size={32} />
+                      {signupForm.nationalIdDocument ? (
+                        <div className="text-sm">
+                          <p className="text-teal-600 font-semibold">✓ {signupForm.nationalIdDocument.name}</p>
+                          <p className="text-gray-500 text-xs mt-1">Click to change</p>
+                        </div>
+                      ) : (
+                        <div className="text-sm">
+                          <p className="text-gray-600 font-semibold">Upload National ID or Passport</p>
+                          <p className="text-gray-500 text-xs mt-1">Clear photo/scan showing all details (JPG, PNG, PDF - Max 5MB)</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">Proof of Residence *</label>
+                  <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-teal-500 cursor-pointer transition bg-gray-50">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      onChange={(e) => setSignupForm({ ...signupForm, proofOfResidence: e.target.files[0] })}
+                      className="hidden"
+                      id="proofOfResidence"
+                    />
+                    <label htmlFor="proofOfResidence" className="cursor-pointer">
+                      <Upload className="mx-auto mb-2 text-gray-400" size={32} />
+                      {signupForm.proofOfResidence ? (
+                        <div className="text-sm">
+                          <p className="text-teal-600 font-semibold">✓ {signupForm.proofOfResidence.name}</p>
+                          <p className="text-gray-500 text-xs mt-1">Click to change</p>
+                        </div>
+                      ) : (
+                        <div className="text-sm">
+                          <p className="text-gray-600 font-semibold">Upload Proof of Residence</p>
+                          <p className="text-gray-500 text-xs mt-1">Utility bill, rent agreement, or official document (JPG, PNG, PDF - Max 5MB)</p>
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded mt-4">
+                <p className="text-xs text-yellow-800">
+                  <strong>Note:</strong> Your documents will be reviewed by our admin team. 
+                  Account activation may take 24-48 hours after submission.
+                </p>
+              </div>
+            </div>
+
+            {/* Password */}
+            <div>
+              <h3 className="font-bold text-lg mb-3 text-gray-700 border-b pb-2">Security</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">Password *</label>
+                  <input
+                    type="password"
+                    placeholder="Minimum 8 characters"
+                    value={signupForm.password}
+                    onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-2 text-sm">Confirm Password *</label>
+                  <input
+                    type="password"
+                    placeholder="Re-enter password"
+                    value={signupForm.confirmPassword}
+                    onChange={(e) => setSignupForm({ ...signupForm, confirmPassword: e.target.value })}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Terms and Conditions */}
+            <div className="bg-gray-50 border rounded-lg p-4">
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input type="checkbox" className="mt-1 w-4 h-4 text-teal-500" required />
+                <span className="text-sm text-gray-700">
+                  I confirm that I am a Liberian citizen or legal resident, and I agree to the 
+                  <a href="#" className="text-teal-600 hover:underline ml-1">Terms of Service</a> and 
+                  <a href="#" className="text-teal-600 hover:underline ml-1">Privacy Policy</a>. 
+                  I understand that providing false information may result in account termination.
+                </span>
+              </label>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex gap-3 pt-4">
+              <button
+                onClick={handleSignup}
+                className="flex-1 bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition"
+              >
+                Submit Registration
+              </button>
+              <button
+                onClick={() => setView('login')}
+                className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition"
+              >
+                Back to Login
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const Sidebar = () => {
+    const menuItems = [
+      { icon: Home, label: 'Dashboard', view: 'dashboard', roles: ['citizen', 'admin', 'responder'] },
+      { icon: FileText, label: 'Report Incident', view: 'report', roles: ['citizen', 'admin', 'responder'] },
+      { icon: Activity, label: 'My Reports', view: 'reports', roles: ['citizen', 'admin', 'responder'] },
+      { icon: Map, label: 'Crime Map', view: 'map', roles: ['citizen', 'admin', 'responder'] },
+      { icon: Bell, label: 'Alerts', view: 'alerts', roles: ['citizen', 'admin', 'responder'] },
+      { icon: MessageSquare, label: 'Chat', view: 'chat', roles: ['citizen', 'admin', 'responder'] },
+      { icon: Shield, label: 'Safety Tips', view: 'tips', roles: ['citizen', 'admin', 'responder'] },
+      { icon: User, label: 'Profile', view: 'profile', roles: ['citizen', 'admin', 'responder'] }
+    ];
+
+    const adminItems = [
+      { icon: BarChart3, label: 'Admin Dashboard', view: 'admin', roles: ['admin'] },
+      { icon: Users, label: 'Manage Users', view: 'admin-users', roles: ['admin'] }
+    ];
+
+    const responderItems = [
+      { icon: Activity, label: 'My Cases', view: 'responder-cases', roles: ['responder'] }
+    ];
+
+    const allItems = [...menuItems, ...adminItems, ...responderItems].filter(item => 
+      item.roles.includes(currentUser?.role || 'citizen')
+    );
+
+    return (
+      <>
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        {/* Sidebar */}
+        <div 
+          className={
+            'fixed lg:sticky top-0 h-screen flex flex-col z-50 transition-transform duration-300 ' +
+            (sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0') +
+            ' w-64'
+          }
+          style={{ backgroundColor: '#2C3E50' }}
+        >
+          <div className="p-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Eye className="w-8 h-8 text-teal-400" />
+              <span className="text-white font-bold text-xl">CitizenEye</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative text-white hover:text-teal-300 transition"
+              >
+                <Bell size={24} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setSidebarOpen(false)}
+                className="lg:hidden text-white hover:text-teal-300 transition"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
+            {allItems.map((item) => (
+              <button
+                key={item.view}
+                onClick={() => {
+                  setView(item.view);
+                  setSidebarOpen(false);
+                }}
+                className={'w-full flex items-center gap-3 p-3 rounded-lg transition ' + (view === item.view ? 'bg-teal-500 text-white' : 'text-gray-300 hover:bg-gray-700')}
+              >
+                <item.icon size={20} />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          <div className="p-4 border-t border-gray-700">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 p-3 rounded-lg text-gray-300 hover:bg-gray-700 transition"
+            >
+              <LogOut size={20} />
+              <span>Logout</span>
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  if (view === 'dashboard') {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>
+            Welcome, {currentUser?.fullName}
+          </h1>
+
+          <div className="mb-8">
+            <button
+              onClick={handlePanicButton}
+              className="w-full bg-red-600 text-white p-6 rounded-xl font-bold text-xl hover:bg-red-700 transition shadow-lg flex items-center justify-center gap-3"
+            >
+              <AlertTriangle size={32} />
+              PANIC BUTTON - EMERGENCY
+            </button>
+            <p className="text-center text-sm text-gray-600 mt-2">
+              Press to send emergency report with your location
+            </p>
+          </div>
+
+          {isResponder && (
+            <div className="mb-8">
+              <div className="bg-teal-50 border-l-4 border-teal-500 p-6 rounded-lg">
+                <div className="flex items-center gap-3 mb-3">
+                  <Activity className="text-teal-600" size={24} />
+                  <h3 className="font-bold text-teal-900">Quick Access to Your Cases</h3>
+                </div>
+                <button
+                  onClick={() => setView('responder-cases')}
+                  className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600 transition font-semibold"
+                >
+                  View My Assigned Cases
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-4 gap-4 mb-8">
+            <button
+              onClick={() => setView('report')}
+              className="bg-blue-500 text-white p-6 rounded-xl hover:opacity-90 transition shadow-lg"
+            >
+              <FileText className="mx-auto mb-2" size={32} />
+              <div className="font-semibold">Report Incident</div>
+            </button>
+            <button
+              onClick={() => setView('map')}
+              className="bg-green-500 text-white p-6 rounded-xl hover:opacity-90 transition shadow-lg"
+            >
+              <Map className="mx-auto mb-2" size={32} />
+              <div className="font-semibold">View Map</div>
+            </button>
+            <button
+              onClick={() => setView('alerts')}
+              className="bg-orange-500 text-white p-6 rounded-xl hover:opacity-90 transition shadow-lg"
+            >
+              <Bell className="mx-auto mb-2" size={32} />
+              <div className="font-semibold">Alerts</div>
+            </button>
+            <button
+              onClick={() => setView('chat')}
+              className="bg-purple-500 text-white p-6 rounded-xl hover:opacity-90 transition shadow-lg"
+            >
+              <MessageSquare className="mx-auto mb-2" size={32} />
+              <div className="font-semibold">Chat</div>
+            </button>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h2 className="text-xl font-bold mb-4" style={{ color: '#2C3E50' }}>Recent Alerts</h2>
+            <div className="space-y-3">
+              {alerts.slice(0, 3).map((alert) => (
+                <div
+                  key={alert.id}
+                  className={'p-4 rounded-lg border-l-4 ' + (alert.severity === 'critical' ? 'border-red-500 bg-red-50' : alert.severity === 'warning' ? 'border-orange-500 bg-orange-50' : 'border-blue-500 bg-blue-50')}
+                >
+                  <div className="font-semibold">{alert.title}</div>
+                  <div className="text-sm text-gray-600">{alert.message}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <h2 className="text-xl font-bold mb-4" style={{ color: '#2C3E50' }}>Top Safety Tips</h2>
+            <div className="space-y-3">
+              {safetyTips.slice(0, 3).map((tip) => (
+                <div key={tip.id} className="p-4 border rounded-lg">
+                  <div className="font-semibold">{tip.title}</div>
+                  <div className="text-sm text-gray-600 mb-2">{tip.content}</div>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    <ThumbsUp size={16} />
+                    <span>{tip.upvotes} upvotes</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'report') {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>Report Incident</h1>
+          
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl">
+            <div className="space-y-4">
+              <div>
+                <label className="block font-semibold mb-2">Incident Type</label>
+                <select
+                  value={reportForm.type}
+                  onChange={(e) => setReportForm({ ...reportForm, type: e.target.value })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="">Select type</option>
+                  <option value="Theft">Theft</option>
+                  <option value="Assault">Assault</option>
+                  <option value="Vandalism">Vandalism</option>
+                  <option value="Burglary">Burglary</option>
+                  <option value="Vehicle Crime">Vehicle Crime</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">Description</label>
+                <textarea
+                  value={reportForm.description}
+                  onChange={(e) => setReportForm({ ...reportForm, description: e.target.value })}
+                  rows={4}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder="Describe what happened..."
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">Location</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={reportForm.location}
+                    onChange={(e) => setReportForm({ ...reportForm, location: e.target.value })}
+                    className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter location"
+                  />
+                  <button
+                    onClick={() => {
+                      setReportForm({ ...reportForm, location: 'Current Location', useCurrentLocation: true });
+                      alert('📍 Location captured!');
+                    }}
+                    className="bg-teal-500 text-white px-4 rounded-lg hover:bg-teal-600 transition flex items-center gap-2"
+                  >
+                    <Navigation size={20} />
+                    Use Current
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">Upload Photo/Video</label>
+                <div className="border-2 border-dashed rounded-lg p-8 text-center hover:border-teal-500 cursor-pointer transition">
+                  <Upload className="mx-auto mb-2 text-gray-400" size={32} />
+                  <p className="text-sm text-gray-600">Click to upload media</p>
+                </div>
+              </div>
+
+              <button
+                onClick={handleSubmitReport}
+                className="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition"
+              >
+                Submit Report
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'reports') {
+    const userReports = isAdmin ? reports : reports.filter(r => r.userId === currentUser?.id);
+
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>
+            {isAdmin ? 'All Reports' : 'My Reports'}
+          </h1>
+          
+          {isResponder && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+              <p className="text-sm text-blue-800 mb-2">
+                <strong>Note:</strong> This shows reports YOU created.
+              </p>
+              <button 
+                onClick={() => setView('responder-cases')}
+                className="text-sm bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Go to My Cases
+              </button>
+            </div>
+          )}
+          
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            {userReports.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="mx-auto mb-4 text-gray-300" size={64} />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Reports Yet</h3>
+                <p className="text-gray-500 mb-4">You have not submitted any incident reports.</p>
+                <button
+                  onClick={() => setView('report')}
+                  className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600"
+                >
+                  Submit Your First Report
+                </button>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">ID</th>
+                      <th className="text-left p-3">Type</th>
+                      <th className="text-left p-3">Location</th>
+                      <th className="text-left p-3">Status</th>
+                      <th className="text-left p-3">Date</th>
+                      <th className="text-left p-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {userReports.map((report) => (
+                      <tr key={report.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3">#{report.id.slice(-6)}</td>
+                        <td className="p-3">{report.type}</td>
+                        <td className="p-3">{report.location}</td>
+                        <td className="p-3">
+                          <span className={'px-3 py-1 rounded-full text-sm ' + (report.status === 'resolved' ? 'bg-green-100 text-green-800' : report.status === 'under_review' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800')}>
+                            {report.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="p-3">{new Date(report.createdAt).toLocaleDateString()}</td>
+                        <td className="p-3">
+                          <button
+                            onClick={() => {
+                              setSelectedReport(report);
+                              setView('report-detail');
+                            }}
+                            className="text-teal-500 hover:text-teal-600"
+                          >
+                            <Eye size={20} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'responder-cases' && isResponder) {
+    const myCases = reports.filter(report => report.assignedTo === currentUser?.id);
+
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>My Assigned Cases</h1>
+          
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-blue-500 text-white p-3 rounded-lg">
+                  <FileText size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{myCases.length}</div>
+              <div className="text-sm text-gray-600">Total Cases</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-500 text-white p-3 rounded-lg">
+                  <Clock size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">
+                {myCases.filter(c => c.status === 'under_review' && c.responderStatus !== 'resolved').length}
+              </div>
+              <div className="text-sm text-gray-600">Active Cases</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-green-500 text-white p-3 rounded-lg">
+                  <CheckCircle size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">
+                {myCases.filter(c => c.responderStatus === 'resolved').length}
+              </div>
+              <div className="text-sm text-gray-600">Resolved Cases</div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">Cases Assigned to You</h2>
+            </div>
+
+            {myCases.length === 0 ? (
+              <div className="text-center py-12">
+                <Activity className="mx-auto mb-4 text-gray-300" size={64} />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No Cases Assigned</h3>
+                <p className="text-gray-500">You do not have any cases assigned to you yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-3">Case ID</th>
+                      <th className="text-left p-3">Type</th>
+                      <th className="text-left p-3">Location</th>
+                      <th className="text-left p-3">Status</th>
+                      <th className="text-left p-3">My Status</th>
+                      <th className="text-left p-3">Date</th>
+                      <th className="text-left p-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {myCases.map((report) => (
+                      <tr key={report.id} className="border-b hover:bg-gray-50">
+                        <td className="p-3">
+                          <span className="font-mono font-semibold">#{report.id.slice(-6)}</span>
+                          {report.isPanic && (
+                            <span className="ml-2 bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">
+                              🚨 EMERGENCY
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3">{report.type}</td>
+                        <td className="p-3">{report.location}</td>
+                        <td className="p-3">
+                          <span className={'px-3 py-1 rounded-full text-sm ' + (report.status === 'resolved' ? 'bg-green-100 text-green-800' : report.status === 'under_review' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800')}>
+                            {report.status.replace('_', ' ')}
+                          </span>
+                        </td>
+                        <td className="p-3">
+                          {report.responderStatus ? (
+                            <span className={'px-3 py-1 rounded-full text-sm ' + (report.responderStatus === 'resolved' ? 'bg-green-100 text-green-800' : report.responderStatus === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}>
+                              {report.responderStatus}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 text-sm">Not updated</span>
+                          )}
+                        </td>
+                        <td className="p-3">{new Date(report.updatedAt).toLocaleDateString()}</td>
+                        <td className="p-3">
+                          <button
+                            onClick={() => {
+                              setSelectedReport(report);
+                              setView('report-detail');
+                            }}
+                            className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 text-sm flex items-center gap-2"
+                          >
+                            <Eye size={16} />
+                            View
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'report-detail' && selectedReport) {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <button
+            onClick={() => setView(isResponder && selectedReport.assignedTo === currentUser?.id ? 'responder-cases' : 'reports')}
+            className="mb-6 text-teal-500 hover:text-teal-600 flex items-center gap-2"
+          >
+            ← Back
+          </button>
+
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>
+            Report Details #{selectedReport.id.slice(-6)}
+          </h1>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl shadow-lg p-6 space-y-4">
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Type</div>
+                <div className="font-semibold flex items-center gap-2">
+                  {selectedReport.type}
+                  {selectedReport.isPanic && (
+                    <span className="bg-red-100 text-red-800 text-xs px-2 py-1 rounded font-bold">
+                      🚨 EMERGENCY
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Status</div>
+                <span className={'px-3 py-1 rounded-full text-sm ' + (selectedReport.status === 'resolved' ? 'bg-green-100 text-green-800' : selectedReport.status === 'under_review' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800')}>
+                  {selectedReport.status.replace('_', ' ')}
+                </span>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Location</div>
+                <div className="font-semibold">{selectedReport.location}</div>
+              </div>
+              {selectedReport.latitude && selectedReport.longitude && (
+                <div>
+                  <div className="text-sm text-gray-600 mb-1">GPS Coordinates</div>
+                  <div className="font-mono text-sm bg-gray-50 p-2 rounded">
+                    Lat: {selectedReport.latitude.toFixed(6)}<br />
+                    Long: {selectedReport.longitude.toFixed(6)}
+                  </div>
+                </div>
+              )}
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Description</div>
+                <div>{selectedReport.description}</div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600 mb-1">Reported</div>
+                <div>{new Date(selectedReport.createdAt).toLocaleString()}</div>
+              </div>
+            </div>
+
+            {isAdmin && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="font-bold mb-4">Assign to Responder</h3>
+                <div className="space-y-3 mb-6">
+                  <select 
+                    value={assignForm.assignedTo}
+                    onChange={(e) => setAssignForm({ ...assignForm, assignedTo: e.target.value })}
+                    className="w-full p-3 border rounded-lg"
+                  >
+                    <option value="">Select Responder</option>
+                    {Object.values(mockUsers).filter(u => u.role === 'responder').map(responder => (
+                      <option key={responder.id} value={responder.id}>{responder.fullName}</option>
+                    ))}
+                  </select>
+                  <button 
+                    onClick={handleAssignReport}
+                    className="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600"
+                  >
+                    Assign Case
+                  </button>
+                </div>
+
+                {selectedReport.assignedTo && (
+                  <div className="border-t pt-4">
+                    <h3 className="font-bold mb-2">Assignment Info</h3>
+                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                      <div className="text-sm">
+                        <span className="font-semibold">Assigned to:</span> {selectedReport.assignedToName}
+                      </div>
+                      {selectedReport.responderStatus && (
+                        <div className="mt-2">
+                          <span className="font-semibold text-sm">Responder Status:</span>
+                          <span className={'ml-2 px-2 py-1 rounded text-xs ' + (selectedReport.responderStatus === 'resolved' ? 'bg-green-100 text-green-800' : selectedReport.responderStatus === 'ongoing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}>
+                            {selectedReport.responderStatus}
+                          </span>
+                        </div>
+                      )}
+                      {selectedReport.responderNotes && (
+                        <div className="mt-2 text-sm">
+                          <span className="font-semibold">Notes:</span> {selectedReport.responderNotes}
+                        </div>
+                      )}
+                    </div>
+                    {selectedReport.responderStatus && !selectedReport.adminReviewed && (
+                      <button
+                        onClick={() => handleAdminReview(selectedReport.id)}
+                        className="w-full bg-green-500 text-white py-2 rounded-lg font-semibold hover:bg-green-600"
+                      >
+                        Confirm Status Update
+                      </button>
+                    )}
+                    {selectedReport.adminReviewed && (
+                      <div className="bg-green-50 p-2 rounded text-sm text-green-800 text-center">
+                        ✓ Status Confirmed by Admin
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {isResponder && selectedReport.assignedTo === currentUser?.id && (
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="font-bold mb-4">Update Case Status</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Status</label>
+                    <select
+                      value={responderForm.status}
+                      onChange={(e) => setResponderForm({ ...responderForm, status: e.target.value })}
+                      className="w-full p-3 border rounded-lg"
+                    >
+                      <option value="">Select status</option>
+                      <option value="resolved">Resolved</option>
+                      <option value="ongoing">Ongoing Investigation</option>
+                      <option value="unsolvable">Cannot Be Solved</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold mb-2">Notes</label>
+                    <textarea
+                      value={responderForm.notes}
+                      onChange={(e) => setResponderForm({ ...responderForm, notes: e.target.value })}
+                      rows={4}
+                      className="w-full p-3 border rounded-lg"
+                      placeholder="Add notes about the case status..."
+                    />
+                  </div>
+                  <button
+                    onClick={handleResponderUpdate}
+                    className="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600"
+                  >
+                    Submit Update
+                  </button>
+                  {selectedReport.responderStatus && (
+                    <div className="bg-blue-50 p-3 rounded-lg text-sm">
+                      <div className="font-semibold">Current Status: {selectedReport.responderStatus}</div>
+                      {selectedReport.adminReviewed ? (
+                        <div className="text-green-600 mt-1">✓ Confirmed by Admin</div>
+                      ) : (
+                        <div className="text-orange-600 mt-1">⏳ Pending Admin Review</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'admin' && isAdmin) {
+    const stats = {
+      totalReports: reports.length,
+      pendingReports: reports.filter(r => r.status === 'pending').length,
+      totalUsers: Object.keys(mockUsers).length,
+      assignedCases: reports.filter(r => r.assignedTo).length,
+      pendingReview: reports.filter(r => r.responderStatus && !r.adminReviewed).length
+    };
+
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>Admin Dashboard</h1>
+          
+          <div className="grid md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-blue-500 text-white p-3 rounded-lg">
+                  <FileText size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.totalReports}</div>
+              <div className="text-sm text-gray-600">Total Reports</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-500 text-white p-3 rounded-lg">
+                  <Clock size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.pendingReports}</div>
+              <div className="text-sm text-gray-600">Pending</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-green-500 text-white p-3 rounded-lg">
+                  <Users size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.totalUsers}</div>
+              <div className="text-sm text-gray-600">Total Users</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-purple-500 text-white p-3 rounded-lg">
+                  <Activity size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{stats.assignedCases}</div>
+              <div className="text-sm text-gray-600">Assigned Cases</div>
+            </div>
+          </div>
+
+          {stats.pendingReview > 0 && (
+            <div className="bg-orange-50 border-l-4 border-orange-500 p-6 rounded-lg mb-8">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="text-orange-600" size={32} />
+                <div>
+                  <h3 className="font-bold text-orange-900">Pending Reviews</h3>
+                  <p className="text-sm text-orange-800">
+                    {stats.pendingReview} case(s) have been updated by responders and need your review.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-bold">Recent Reports</h3>
+              <button
+                onClick={() => setView('reports')}
+                className="text-teal-500 hover:text-teal-600 text-sm"
+              >
+                View All →
+              </button>
+            </div>
+            {reports.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">No reports yet</div>
+            ) : (
+              <div className="space-y-3">
+                {reports.slice(0, 5).map((report) => (
+                  <div key={report.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-teal-100 rounded-full flex items-center justify-center">
+                        <FileText className="text-teal-600" size={20} />
+                      </div>
+                      <div>
+                        <div className="font-semibold">{report.type}</div>
+                        <div className="text-sm text-gray-600">{report.location}</div>
+                        {report.assignedToName && (
+                          <div className="text-xs text-gray-500">Assigned to: {report.assignedToName}</div>
+                        )}
+                        {report.responderStatus && !report.adminReviewed && (
+                          <div className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded inline-block mt-1">
+                            ⏳ Needs Review
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedReport(report);
+                        setView('report-detail');
+                      }}
+                      className="text-teal-500 hover:text-teal-600"
+                    >
+                      View →
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'admin-users' && isAdmin) {
+    const roleStats = {
+      citizens: users.filter(u => u.role === 'citizen').length,
+      responders: users.filter(u => u.role === 'responder').length,
+      admins: users.filter(u => u.role === 'admin').length,
+      verified: users.filter(u => u.isVerified).length
+    };
+
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: '#2C3E50' }}>User Management</h1>
+              <p className="text-gray-600 mt-1">Manage all platform users and their roles</p>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedUser(null);
+                setUserForm({ fullName: '', email: '', phone: '', role: 'citizen' });
+                setShowUserModal(true);
+              }}
+              className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600 flex items-center gap-2 font-semibold shadow-lg"
+            >
+              <Plus size={20} />
+              Add New User
+            </button>
+          </div>
+
+          <div className="grid md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-blue-500 text-white p-3 rounded-lg">
+                  <Users size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{users.length}</div>
+              <div className="text-sm text-gray-600">Total Users</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-green-500 text-white p-3 rounded-lg">
+                  <User size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{roleStats.citizens}</div>
+              <div className="text-sm text-gray-600">Citizens</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-purple-500 text-white p-3 rounded-lg">
+                  <Shield size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{roleStats.responders}</div>
+              <div className="text-sm text-gray-600">Responders</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <div className="flex items-center justify-between mb-3">
+                <div className="bg-orange-500 text-white p-3 rounded-lg">
+                  <CheckCircle size={24} />
+                </div>
+              </div>
+              <div className="text-3xl font-bold mb-1">{roleStats.verified}</div>
+              <div className="text-sm text-gray-600">Verified</div>
+            </div>
+          </div>
+
+          {showUserModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">
+                    {selectedUser ? 'Edit User' : 'Add New User'}
+                  </h2>
+                  <button 
+                    onClick={() => {
+                      setShowUserModal(false);
+                      setSelectedUser(null);
+                      setUserForm({ fullName: '', email: '', phone: '', role: 'citizen' });
+                    }}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+                
+                <div className="space-y-4">
+                  <div>
+                    <label className="block font-semibold mb-2">Full Name *</label>
+                    <input
+                      type="text"
+                      value={userForm.fullName}
+                      onChange={(e) => setUserForm({ ...userForm, fullName: e.target.value })}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                      placeholder="Enter full name"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2">Email Address *</label>
+                    <input
+                      type="email"
+                      value={userForm.email}
+                      onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                      placeholder="user@example.com"
+                      disabled={!!selectedUser}
+                    />
+                    {selectedUser && (
+                      <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2">Phone Number *</label>
+                    <input
+                      type="tel"
+                      value={userForm.phone}
+                      onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                      placeholder="+1 (555) 000-0000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold mb-2">Role *</label>
+                    <select
+                      value={userForm.role}
+                      onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="citizen">Citizen</option>
+                      <option value="responder">Responder</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {userForm.role === 'citizen' && 'Can submit reports and access community features'}
+                      {userForm.role === 'responder' && 'Can manage assigned cases and update statuses'}
+                      {userForm.role === 'admin' && 'Full access to all platform features'}
+                    </p>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      onClick={selectedUser ? handleEditUser : handleAddUser}
+                      className="flex-1 bg-teal-500 text-white py-3 rounded-lg hover:bg-teal-600 font-semibold"
+                    >
+                      {selectedUser ? 'Update User' : 'Add User'}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setShowUserModal(false);
+                        setSelectedUser(null);
+                        setUserForm({ fullName: '', email: '', phone: '', role: 'citizen' });
+                      }}
+                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold">All Users</h2>
+              <div className="flex items-center gap-3">
+                <select className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500">
+                  <option value="all">All Roles</option>
+                  <option value="citizen">Citizens</option>
+                  <option value="responder">Responders</option>
+                  <option value="admin">Admins</option>
+                </select>
+                <div className="relative">
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    className="pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-3">User</th>
+                    <th className="text-left p-3">Email</th>
+                    <th className="text-left p-3">Phone</th>
+                    <th className="text-left p-3">Role</th>
+                    <th className="text-left p-3">Status</th>
+                    <th className="text-left p-3">Joined</th>
+                    <th className="text-left p-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr key={user.id} className="border-b hover:bg-gray-50">
+                      <td className="p-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {user.fullName.charAt(0)}
+                          </div>
+                          <div>
+                            <div className="font-semibold">{user.fullName}</div>
+                            {user.id === currentUser?.id && (
+                              <span className="text-xs text-teal-600">(You)</span>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-3 text-sm">{user.email}</td>
+                      <td className="p-3 text-sm">{user.phone}</td>
+                      <td className="p-3">
+                        <span className={'px-3 py-1 rounded-full text-xs font-semibold ' + 
+                          (user.role === 'admin' ? 'bg-purple-100 text-purple-800' : 
+                           user.role === 'responder' ? 'bg-blue-100 text-blue-800' : 
+                           'bg-gray-100 text-gray-800')}>
+                          {user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <span className={'px-3 py-1 rounded-full text-xs font-semibold ' + 
+                          (user.isVerified ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')}>
+                          {user.isVerified ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="p-3 text-sm">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-3">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setUserForm({
+                                fullName: user.fullName,
+                                email: user.email,
+                                phone: user.phone,
+                                role: user.role
+                              });
+                              setShowUserModal(true);
+                            }}
+                            className="text-blue-500 hover:text-blue-600 p-2"
+                            title="Edit"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleToggleUserStatus(user.id)}
+                            className={'p-2 ' + (user.isVerified ? 'text-orange-500 hover:text-orange-600' : 'text-green-500 hover:text-green-600')}
+                            title={user.isVerified ? 'Deactivate' : 'Activate'}
+                          >
+                            {user.isVerified ? <AlertCircle size={18} /> : <CheckCircle size={18} />}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="text-red-500 hover:text-red-600 p-2"
+                            title="Delete"
+                            disabled={user.id === currentUser?.id}
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+            <h3 className="font-bold mb-4">User Statistics</h3>
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-semibold mb-3">Users by Role</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Citizens</span>
+                    <span className="font-bold">{roleStats.citizens} ({((roleStats.citizens / users.length) * 100).toFixed(0)}%)</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Responders</span>
+                    <span className="font-bold">{roleStats.responders} ({((roleStats.responders / users.length) * 100).toFixed(0)}%)</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Admins</span>
+                    <span className="font-bold">{roleStats.admins} ({((roleStats.admins / users.length) * 100).toFixed(0)}%)</span>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h4 className="font-semibold mb-3">Account Status</h4>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Active Users</span>
+                    <span className="font-bold text-green-600">{roleStats.verified}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Inactive Users</span>
+                    <span className="font-bold text-red-600">{users.length - roleStats.verified}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Total Users</span>
+                    <span className="font-bold">{users.length}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'admin-alert' && isAdmin) {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <Sidebar />
+        <div className="flex-1 p-8">
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>Create Safety Alert</h1>
+          
+          <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl">
+            <div className="space-y-4">
+              <div>
+                <label className="block font-semibold mb-2">Alert Title</label>
+                <input
+                  type="text"
+                  value={alertForm.title}
+                  onChange={(e) => setAlertForm({ ...alertForm, title: e.target.value })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter alert title"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">Message</label>
+                <textarea
+                  value={alertForm.message}
+                  onChange={(e) => setAlertForm({ ...alertForm, message: e.target.value })}
+                  rows={4}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder="Enter alert message"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-2">Severity Level</label>
+                <select
+                  value={alertForm.severity}
+                  onChange={(e) => setAlertForm({ ...alertForm, severity: e.target.value })}
+                  className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                >
+                  <option value="info">Info</option>
+                  <option value="warning">Warning</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </div>
+
+              <button
+                onClick={handleCreateAlert}
+                className="w-full bg-teal-500 text-white py-3 rounded-lg font-semibold hover:bg-teal-600 transition"
+              >
+                Broadcast Alert
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'tips') {
+    const categories = ['All', 'Home Security', 'Personal Safety', 'Cyber Security', 'Fire Safety', 'Emergency Preparedness', 'Travel Safety'];
+    
+    const filteredTips = safetyTips.filter(tip => {
+      const matchesCategory = filterCategory === 'All' || tip.category === filterCategory;
+      const matchesSearch = tip.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                           tip.content.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+
+    const handleAddTip = () => {
+      if (!newTip.title || !newTip.content || !newTip.category) {
+        alert('Please fill in all fields');
+        return;
+      }
+      const tip = {
+        id: Date.now().toString(),
+        title: newTip.title,
+        content: newTip.content,
+        category: newTip.category,
+        userId: currentUser?.id || '',
+        userName: currentUser?.fullName || '',
+        upvotes: 0,
+        createdAt: new Date().toISOString()
+      };
+      setSafetyTips([tip, ...safetyTips]);
+      setNewTip({ title: '', content: '', category: '' });
+      setShowAddTip(false);
+      showSuccess('Safety tip added successfully!');
+    };
+
+    const handleUpvote = (tipId) => {
+      const updatedTips = safetyTips.map(tip => {
+        if (tip.id === tipId) {
+          return { ...tip, upvotes: tip.upvotes + 1 };
+        }
+        return tip;
+      });
+      setSafetyTips(updatedTips);
+      showSuccess('Tip upvoted!');
+    };
+
+    const handleDeleteTip = (tipId) => {
+      if (confirm('Are you sure you want to delete this tip?')) {
+        setSafetyTips(safetyTips.filter(tip => tip.id !== tipId));
+        showSuccess('Safety tip deleted successfully!');
+      }
+    };
+
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-3xl font-bold" style={{ color: '#2C3E50' }}>Safety Tips</h1>
+              <p className="text-gray-600 mt-1">Expert safety advice and best practices</p>
+            </div>
+            {isAdmin && (
+              <button 
+                onClick={() => setShowAddTip(true)}
+                className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 flex items-center gap-2"
+              >
+                <Plus size={20} />
+                Add Safety Tip
+              </button>
+            )}
+          </div>
+
+          <div className="mb-6 flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+              <input
+                type="text"
+                placeholder="Search safety tips..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+              />
+            </div>
+            <select
+              value={filterCategory}
+              onChange={(e) => setFilterCategory(e.target.value)}
+              className="px-4 py-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+            >
+              {categories.map(cat => (
+                <option key={cat} value={cat}>{cat}</option>
+              ))}
+            </select>
+          </div>
+
+          {showAddTip && isAdmin && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-2xl font-bold">Add New Safety Tip</h2>
+                  <button onClick={() => setShowAddTip(false)} className="text-gray-500 hover:text-gray-700">
+                    <X size={24} />
+                  </button>
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block font-semibold mb-2">Title</label>
+                    <input
+                      type="text"
+                      value={newTip.title}
+                      onChange={(e) => setNewTip({ ...newTip, title: e.target.value })}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                      placeholder="Enter tip title"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-2">Category</label>
+                    <select
+                      value={newTip.category}
+                      onChange={(e) => setNewTip({ ...newTip, category: e.target.value })}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                    >
+                      <option value="">Select category</option>
+                      {categories.filter(c => c !== 'All').map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-semibold mb-2">Content</label>
+                    <textarea
+                      value={newTip.content}
+                      onChange={(e) => setNewTip({ ...newTip, content: e.target.value })}
+                      rows={4}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                      placeholder="Write your safety tip here..."
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleAddTip}
+                      className="flex-1 bg-teal-500 text-white py-3 rounded-lg hover:bg-teal-600 font-semibold"
+                    >
+                      Submit Tip
+                    </button>
+                    <button
+                      onClick={() => setShowAddTip(false)}
+                      className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg hover:bg-gray-300 font-semibold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="mb-6 bg-purple-50 border-l-4 border-purple-500 p-4 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Shield className="text-purple-600" size={24} />
+                <div>
+                  <h3 className="font-bold text-purple-900">Admin Controls</h3>
+                  <p className="text-sm text-purple-800">You can add, edit, and delete safety tips for the community</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {!isAdmin && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4 rounded-lg">
+              <div className="flex items-center gap-3">
+                <Shield className="text-blue-600" size={24} />
+                <div>
+                  <h3 className="font-bold text-blue-900">Community Safety Tips</h3>
+                  <p className="text-sm text-blue-800">
+                    {isResponder 
+                      ? 'Browse expert safety tips to share with citizens during case resolution'
+                      : 'Browse expert safety tips to keep yourself and your community safe'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="bg-white rounded-xl shadow-lg p-4 text-center">
+              <div className="text-3xl font-bold text-teal-600">{safetyTips.length}</div>
+              <div className="text-sm text-gray-600">Total Tips</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-4 text-center">
+              <div className="text-3xl font-bold text-blue-600">{categories.length - 1}</div>
+              <div className="text-sm text-gray-600">Categories</div>
+            </div>
+            <div className="bg-white rounded-xl shadow-lg p-4 text-center">
+              <div className="text-3xl font-bold text-green-600">
+                {safetyTips.reduce((sum, tip) => sum + tip.upvotes, 0)}
+              </div>
+              <div className="text-sm text-gray-600">Total Upvotes</div>
+            </div>
+          </div>
+
+          {filteredTips.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+              <Shield className="mx-auto mb-4 text-gray-300" size={64} />
+              <h3 className="text-xl font-semibold text-gray-600 mb-2">No tips found</h3>
+              <p className="text-gray-500 mb-4">
+                {searchQuery || filterCategory !== 'All' 
+                  ? 'Try adjusting your search or filter' 
+                  : isAdmin ? 'Be the first to add a safety tip!' : 'Check back soon for safety tips'}
+              </p>
+              {isAdmin && (
+                <button 
+                  onClick={() => setShowAddTip(true)}
+                  className="bg-teal-500 text-white px-6 py-3 rounded-lg hover:bg-teal-600"
+                >
+                  Add First Tip
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredTips.map((tip) => {
+                return (
+                  <div key={tip.id} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Shield className="text-teal-500" size={20} />
+                          <h3 className="font-bold text-lg">{tip.title}</h3>
+                        </div>
+                        <span className="inline-block bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm font-semibold">
+                          {tip.category}
+                        </span>
+                      </div>
+                      {isAdmin && (
+                        <span className="bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded font-semibold">
+                          Admin Content
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-gray-700 mb-4 leading-relaxed">{tip.content}</p>
+
+                    <div className="flex items-center justify-between pt-4 border-t">
+                      <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-1">
+                          <User size={16} />
+                          <span>Safety Expert</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock size={16} />
+                          <span>{new Date(tip.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button 
+                          onClick={() => handleUpvote(tip.id)}
+                          className="flex items-center gap-2 bg-gray-100 hover:bg-teal-100 text-gray-700 hover:text-teal-700 px-4 py-2 rounded-lg transition"
+                        >
+                          <ThumbsUp size={18} />
+                          <span className="font-semibold">{tip.upvotes}</span>
+                        </button>
+
+                        {isAdmin && (
+                          <>
+                            <button className="text-blue-500 hover:text-blue-600 p-2">
+                              <Edit size={18} />
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteTip(tip.id)}
+                              className="text-red-500 hover:text-red-600 p-2"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {isResponder && (
+                      <div className="mt-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+                        <strong>Responder Note:</strong> You can reference this tip when assisting citizens
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {isAdmin && filteredTips.length > 0 && (
+            <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+              <h3 className="font-bold mb-4">Admin Analytics</h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Most Popular Category</div>
+                  <div className="font-bold text-lg">Home Security</div>
+                </div>
+                <div className="p-4 border rounded-lg">
+                  <div className="text-sm text-gray-600 mb-1">Most Upvoted Tip</div>
+                  <div className="font-bold text-lg">{safetyTips[0]?.title || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'chat') {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>Community Chat</h1>
+          
+          {!selectedChatRoom ? (
+            <div>
+              <div className="mb-6 flex items-center justify-between">
+                <p className="text-gray-600">Join a chat room to connect with your community</p>
+                {isAdmin && (
+                  <button className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 flex items-center gap-2">
+                    <Plus size={20} />
+                    Create Room
+                  </button>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                {mockChatRooms.map((room) => (
+                  <button
+                    key={room.id}
+                    onClick={() => setSelectedChatRoom(room.id)}
+                    className="bg-white rounded-xl shadow-lg p-6 text-left hover:shadow-xl transition"
+                  >
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-12 h-12 bg-teal-500 rounded-full flex items-center justify-center">
+                        <MessageSquare className="text-white" size={24} />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-bold text-lg">{room.name}</h3>
+                        <p className="text-sm text-gray-600">{room.description}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Users size={16} />
+                        <span>{room.memberCount} members</span>
+                      </div>
+                      {chatMessages.filter(m => m.roomId === room.id).length > 0 && (
+                        <span className="bg-teal-100 text-teal-800 text-xs px-2 py-1 rounded-full font-semibold">
+                          {chatMessages.filter(m => m.roomId === room.id).length} new
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {isAdmin && (
+                <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="font-bold mb-4">Room Management</h3>
+                  <div className="space-y-3">
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span>Moderate Messages</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span>Manage Members</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span>Chat Analytics</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl shadow-lg flex flex-col" style={{ height: 'calc(100vh - 200px)' }}>
+              <div className="p-4 border-b flex items-center justify-between bg-gray-50">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setSelectedChatRoom('')}
+                    className="text-gray-500 hover:text-gray-700"
+                  >
+                    <X size={20} />
+                  </button>
+                  <div className="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center">
+                    <MessageSquare className="text-white" size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold">
+                      {mockChatRooms.find(r => r.id === selectedChatRoom)?.name}
+                    </h3>
+                    <p className="text-xs text-gray-500">
+                      {mockChatRooms.find(r => r.id === selectedChatRoom)?.memberCount} members online
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {isAdmin && (
+                    <button className="text-gray-500 hover:text-gray-700 p-2">
+                      <Shield size={20} />
+                    </button>
+                  )}
+                  <button className="text-gray-500 hover:text-gray-700 p-2">
+                    <Search size={20} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 p-4 overflow-y-auto space-y-4">
+                {chatMessages.filter(m => m.roomId === selectedChatRoom).length === 0 ? (
+                  <div className="text-center py-12">
+                    <MessageSquare className="mx-auto mb-4 text-gray-300" size={64} />
+                    <h3 className="text-xl font-semibold text-gray-600 mb-2">No messages yet</h3>
+                    <p className="text-gray-500">Be the first to start the conversation!</p>
+                  </div>
+                ) : (
+                  chatMessages
+                    .filter(m => m.roomId === selectedChatRoom)
+                    .map((msg) => {
+                      const isCurrentUser = msg.userId === currentUser?.id;
+                      return (
+                        <div key={msg.id} className={'flex gap-3 ' + (isCurrentUser ? 'flex-row-reverse' : '')}>
+                          <div className={'w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0 ' + (isCurrentUser ? 'bg-teal-500' : 'bg-gray-400')}>
+                            {msg.userName.charAt(0)}
+                          </div>
+                          <div className={'flex-1 max-w-md ' + (isCurrentUser ? 'text-right' : '')}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={'text-sm font-semibold ' + (isCurrentUser ? 'order-2' : '')}>
+                                {isCurrentUser ? 'You' : msg.userName}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                            <div className={'inline-block p-3 rounded-lg ' + (isCurrentUser ? 'bg-teal-500 text-white rounded-tr-none' : 'bg-gray-100 text-gray-800 rounded-tl-none')}>
+                              {msg.message}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+
+              <div className="p-4 border-t bg-gray-50">
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        const newMsg = {
+                          id: Date.now().toString(),
+                          roomId: selectedChatRoom,
+                          userId: currentUser?.id || '',
+                          userName: currentUser?.fullName || '',
+                          message: e.currentTarget.value,
+                          timestamp: new Date().toISOString()
+                        };
+                        setChatMessages([...chatMessages, newMsg]);
+                        e.currentTarget.value = '';
+                      }
+                    }}
+                  />
+                  <button className="bg-gray-200 text-gray-600 px-4 rounded-lg hover:bg-gray-300">
+                    <Upload size={20} />
+                  </button>
+                  <button 
+                    onClick={(e) => {
+                      const input = e.currentTarget.parentElement.querySelector('input');
+                      if (input && input.value.trim()) {
+                        const newMsg = {
+                          id: Date.now().toString(),
+                          roomId: selectedChatRoom,
+                          userId: currentUser?.id || '',
+                          userName: currentUser?.fullName || '',
+                          message: input.value,
+                          timestamp: new Date().toISOString()
+                        };
+                        setChatMessages([...chatMessages, newMsg]);
+                        input.value = '';
+                      }
+                    }}
+                    className="bg-teal-500 text-white px-6 rounded-lg hover:bg-teal-600 flex items-center gap-2"
+                  >
+                    <Send size={20} />
+                    Send
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-2">
+                  Press Enter to send • {isAdmin ? 'Admin' : isResponder ? 'Responder' : 'Citizen'} • Be respectful
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'profile') {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>My Profile</h1>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h3 className="font-bold mb-4 text-lg">Profile Information</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-20 h-20 bg-teal-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+                    {currentUser?.fullName.charAt(0)}
+                  </div>
+                  <div>
+                    <button className="text-teal-500 hover:text-teal-600 text-sm flex items-center gap-2">
+                      <Upload size={16} />
+                      Change Avatar
+                    </button>
+                    <p className="text-xs text-gray-500 mt-1">JPG, PNG or GIF (max 2MB)</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Full Name</label>
+                  <input
+                    type="text"
+                    defaultValue={currentUser?.fullName}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="Enter your full name"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Email Address</label>
+                  <input
+                    type="email"
+                    defaultValue={currentUser?.email}
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    disabled
+                  />
+                  <p className="text-xs text-gray-500 mt-1">Email cannot be changed</p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    defaultValue={currentUser?.phone || ''}
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500"
+                    placeholder="+1 (555) 000-0000"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Role</label>
+                  <input
+                    type="text"
+                    value={currentUser?.role.charAt(0).toUpperCase() + currentUser?.role.slice(1)}
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    disabled
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Member Since</label>
+                  <input
+                    type="text"
+                    value={new Date(currentUser?.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
+                    className="w-full p-3 border rounded-lg bg-gray-50"
+                    disabled
+                  />
+                </div>
+
+                <button 
+                  onClick={() => showSuccess('Profile updated successfully! Your changes have been saved.')}
+                  className="w-full bg-teal-500 text-white py-3 rounded-lg hover:bg-teal-600 font-semibold"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {!isAdmin && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="font-bold mb-4 text-lg">Emergency Features</h3>
+                  <button
+                    onClick={handlePanicButton}
+                    className="w-full bg-red-600 text-white p-4 rounded-lg font-bold hover:bg-red-700 transition flex items-center justify-center gap-2"
+                  >
+                    <AlertTriangle size={24} />
+                    PANIC BUTTON
+                  </button>
+                  <p className="text-xs text-gray-500 text-center mt-2">
+                    Press to send emergency alert with your location
+                  </p>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-bold text-lg">Emergency Contacts</h3>
+                  <button className="text-teal-500 hover:text-teal-600">
+                    <Plus size={20} />
+                  </button>
+                </div>
+                {currentUser?.emergencyContacts && currentUser.emergencyContacts.length > 0 ? (
+                  <div className="space-y-3">
+                    {currentUser.emergencyContacts.map((contact, idx) => (
+                      <div key={idx} className="p-3 border rounded-lg flex items-center justify-between hover:bg-gray-50">
+                        <div>
+                          <div className="font-semibold text-sm">{contact.name}</div>
+                          <div className="text-sm text-gray-600">{contact.phone}</div>
+                          <div className="text-xs text-gray-500">{contact.relationship}</div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button className="text-blue-500 hover:text-blue-600">
+                            <Edit size={16} />
+                          </button>
+                          <button className="text-red-500 hover:text-red-600">
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-gray-500">
+                    <Users className="mx-auto mb-2 text-gray-300" size={32} />
+                    <p className="text-sm">No emergency contacts added</p>
+                    <button className="mt-3 text-teal-500 hover:text-teal-600 text-sm font-semibold">
+                      Add Contact
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="font-bold mb-4 text-lg">Privacy Settings</h3>
+                <div className="space-y-4">
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-medium">Anonymous Reporting</span>
+                      <p className="text-xs text-gray-500">Submit reports without revealing your identity</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked={currentUser?.anonymousReporting}
+                      className="w-5 h-5 text-teal-500 rounded"
+                    />
+                  </label>
+                  
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-medium">Push Notifications</span>
+                      <p className="text-xs text-gray-500">Receive alerts and updates</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-5 h-5 text-teal-500 rounded"
+                    />
+                  </label>
+                  
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-medium">Location Services</span>
+                      <p className="text-xs text-gray-500">Allow app to access your location</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-5 h-5 text-teal-500 rounded"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between cursor-pointer">
+                    <div>
+                      <span className="font-medium">Email Notifications</span>
+                      <p className="text-xs text-gray-500">Receive email updates about reports</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      defaultChecked
+                      className="w-5 h-5 text-teal-500 rounded"
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h3 className="font-bold mb-4 text-lg">Security</h3>
+                <div className="space-y-3">
+                  <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                    <span className="font-medium">Change Password</span>
+                    <span className="text-gray-400">→</span>
+                  </button>
+                  <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                    <span className="font-medium">Two-Factor Authentication</span>
+                    <span className="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Not Enabled</span>
+                  </button>
+                  <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                    <span className="font-medium">Login History</span>
+                    <span className="text-gray-400">→</span>
+                  </button>
+                </div>
+              </div>
+
+              {isAdmin && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="font-bold mb-4 text-lg">Admin Settings</h3>
+                  <div className="space-y-3">
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span className="font-medium">System Configuration</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span className="font-medium">Backup & Restore</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span className="font-medium">Activity Logs</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isResponder && (
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h3 className="font-bold mb-4 text-lg">Responder Settings</h3>
+                  <div className="space-y-4">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <div>
+                        <span className="font-medium">On-Duty Status</span>
+                        <p className="text-xs text-gray-500">Available for case assignments</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        defaultChecked
+                        className="w-5 h-5 text-teal-500 rounded"
+                      />
+                    </label>
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span className="font-medium">My Performance Stats</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                    <button className="w-full text-left p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between">
+                      <span className="font-medium">Badge & Credentials</span>
+                      <span className="text-gray-400">→</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-white rounded-xl shadow-lg p-6 border-2 border-red-200">
+                <h3 className="font-bold mb-4 text-lg text-red-600">Danger Zone</h3>
+                <div className="space-y-3">
+                  <button className="w-full text-left p-3 border border-red-300 rounded-lg hover:bg-red-50 text-red-600 font-medium">
+                    Deactivate Account
+                  </button>
+                  <button className="w-full text-left p-3 border border-red-300 rounded-lg hover:bg-red-50 text-red-600 font-medium">
+                    Delete Account Permanently
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mt-3">
+                  Once you delete your account, there is no going back. Please be certain.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'alerts') {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>Safety Alerts</h1>
+          
+          <div className="space-y-4">
+            {alerts.map((alert) => (
+              <div
+                key={alert.id}
+                className={'p-6 rounded-xl shadow-lg border-l-4 ' + 
+                  (alert.severity === 'critical' ? 'border-red-500 bg-red-50' : 
+                   alert.severity === 'warning' ? 'border-orange-500 bg-orange-50' : 
+                   'border-blue-500 bg-blue-50')}
+              >
+                <div className="flex items-start gap-4">
+                  <div className={'w-12 h-12 rounded-full flex items-center justify-center ' + 
+                    (alert.severity === 'critical' ? 'bg-red-500' : 
+                     alert.severity === 'warning' ? 'bg-orange-500' : 
+                     'bg-blue-500')}>
+                    <Bell className="text-white" size={24} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-bold text-xl">{alert.title}</h3>
+                      <span className={'px-3 py-1 rounded-full text-xs font-bold uppercase ' + 
+                        (alert.severity === 'critical' ? 'bg-red-200 text-red-800' : 
+                         alert.severity === 'warning' ? 'bg-orange-200 text-orange-800' : 
+                         'bg-blue-200 text-blue-800')}>
+                        {alert.severity}
+                      </span>
+                    </div>
+                    <p className="text-gray-700 mb-3">{alert.message}</p>
+                    <div className="text-sm text-gray-500">
+                      {new Date(alert.createdAt).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+            
+            {alerts.length === 0 && (
+              <div className="bg-white rounded-xl shadow-lg p-12 text-center">
+                <Bell className="mx-auto mb-4 text-gray-300" size={64} />
+                <h3 className="text-xl font-semibold text-gray-600 mb-2">No alerts</h3>
+                <p className="text-gray-500">There are currently no safety alerts.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'map') {
+    return (
+      <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+        <SuccessNotification />
+        <NotificationPanel />
+        <Sidebar />
+        <div className="flex-1 p-4 lg:p-8">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed bottom-6 right-6 bg-teal-500 text-white p-4 rounded-full shadow-lg z-30 hover:bg-teal-600 transition"
+          >
+            <Menu size={24} />
+          </button>
+          <h1 className="text-3xl font-bold mb-6" style={{ color: '#2C3E50' }}>Crime Map</h1>
+          
+          <div className="bg-white rounded-xl shadow-lg p-8 text-center">
+            <Map className="mx-auto mb-4 text-gray-300" size={64} />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">Interactive Map</h3>
+            <p className="text-gray-500 mb-4">
+              View crime reports and incidents on an interactive map
+            </p>
+            <div className="bg-gray-100 rounded-lg p-12 mb-4">
+              <p className="text-gray-400">Map visualization would be displayed here</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              <div className="p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-blue-600">{reports.length}</div>
+                <div className="text-sm text-gray-600">Total Reports</div>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-orange-600">
+                  {reports.filter(r => r.status === 'pending').length}
+                </div>
+                <div className="text-sm text-gray-600">Active Incidents</div>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <div className="text-2xl font-bold text-green-600">
+                  {reports.filter(r => r.status === 'resolved').length}
+                </div>
+                <div className="text-sm text-gray-600">Resolved</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-screen" style={{ backgroundColor: '#F0F4F8', fontFamily: 'Inter, sans-serif' }}>
+      <NotificationPanel />
+      <Sidebar />
+      <div className="flex-1 p-8">
+        <h1 className="text-3xl font-bold" style={{ color: '#2C3E50' }}>Welcome to CitizenEye</h1>
+      </div>
+    </div>
+  );
+}
+
     </script>
 </body>
 </html>
